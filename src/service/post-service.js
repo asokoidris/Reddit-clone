@@ -3,9 +3,11 @@ const PostModel = require('../model/post');
 const CommunityModel = require('../model/community');
 const HelperFunctions = require('../utils/helper-functions');
 
+const AuditLogService = require('../service/audit-log-service');
+
 /**
  * @description - This is a class that contain business logic for post.
- *  @class Controller
+ * @class Controller
  * @exports Controller
  * @classdesc - This is a class that contains business logic for post.
  */
@@ -72,6 +74,13 @@ class PostService {
       { new: true }
     );
 
+    AuditLogService.createAuditLog({
+      action: 'create',
+      resource: 'post',
+      modelId: newPost.id,
+      userId: user.id,
+    });
+
     return {
       statusCode: 201,
       message: 'Post created successfully',
@@ -103,6 +112,13 @@ class PostService {
       !post.postedTo.members.includes(user.id)
     ) {
       const isMember = post.postedTo.members.includes(user.id);
+
+      AuditLogService.createAuditLog({
+        action: 'view',
+        resource: 'post',
+        modelId: post.id,
+        userId: user.id,
+      });
       if (!isMember)
         return {
           statusCode: 403,
@@ -171,6 +187,13 @@ class PostService {
         return posts;
       });
 
+    AuditLogService.createAuditLog({
+      action: 'view',
+      resource: 'post',
+      modelId: 'all',
+      userId: user.id,
+    });
+
     return {
       statusCode: 200,
       message: 'Posts fetched successfully',
@@ -205,6 +228,13 @@ class PostService {
       { new: true }
     );
 
+    AuditLogService.createAuditLog({
+      action: 'update',
+      resource: 'post',
+      modelId: id,
+      userId: user.id,
+    });
+
     return {
       statusCode: 200,
       message: 'Post updated successfully',
@@ -214,12 +244,12 @@ class PostService {
 
   /**
    * @description - This method is used to delete a post
-   *  @param {object} req - The request object
-   * @param {object} res - The response object
+   * @param {string} id - The id of the post
+   * @param {object} user - The user object
    * @returns {object} - Returns an object
    * @memberof PostService
    * */
-  static async deletePost(id) {
+  static async deletePost(id, user) {
     const post = await PostModel.findById(id);
     if (!post)
       return {
@@ -227,6 +257,13 @@ class PostService {
         message: 'Post not found',
       };
     await PostModel.findByIdAndDelete(id);
+
+    AuditLogService.createAuditLog({
+      action: 'delete',
+      resource: 'post',
+      modelId: id,
+      userId: user.id,
+    });
     return {
       statusCode: 200,
       message: 'Post deleted successfully',

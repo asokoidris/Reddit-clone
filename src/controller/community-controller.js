@@ -50,9 +50,10 @@ class CommunityController {
    * */
   static async updateCommunity(req, res) {
     try {
-      const { body } = req;
+      const { body, user } = req;
       const { id } = req.params;
-      const result = await CommunityService.updateCommunity(body, id);
+      const result = await CommunityService.updateCommunity(body, id, user);
+
       if (result.statusCode == 404)
         return errorResponse(res, result.statusCode, result.message);
       logger.info(
@@ -80,7 +81,7 @@ class CommunityController {
   static async deleteCommunity(req, res) {
     try {
       const { id } = req.params;
-      const result = await CommunityService.deleteCommunity(id);
+      const result = await CommunityService.deleteCommunity(id, req.user);
       if (result.statusCode == 404)
         return errorResponse(res, result.statusCode, result.message);
       logger.info(

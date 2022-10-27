@@ -1,6 +1,6 @@
 const CommunityModel = require('../model/community');
-const { successResponse, errorResponse } = require('../utils/response');
 const HelperFunctions = require('../utils/helper-functions');
+const AuditLogService = require('../service/audit-log-service');
 
 /**
  * @description - This is a class that contains methods for community.
@@ -11,8 +11,8 @@ const HelperFunctions = require('../utils/helper-functions');
 class CommunityService {
   /**
    * @description - This method is used to create a community
-   * @param {object} req - The request object
-   * @param {object} res - The response object
+   * @param {object} data - The request object
+   * @param {object} user - The response object
    * @returns {object} - Returns an object
    * @memberof CommunityService
    *  */
@@ -35,6 +35,13 @@ class CommunityService {
       createdAt: new Date(),
     });
     logger.info(`Community created with name: ${name}`);
+
+    AuditLogService.createAuditLog({
+      action: 'create',
+      resource: 'community',
+      modelId: newCommunity.id,
+      userId: user.id,
+    });
     return {
       statusCode: 201,
       message: 'Community created successfully',
@@ -44,12 +51,13 @@ class CommunityService {
 
   /**
    * @description - This method is used to update communities
-   * @param {object} req - The request object
-   * @param {object} res - The response object
+   * @param {object} data - The data object
+   * @param {string} id - The id of the community
+   * @param {object} user - The user object
    * @returns {object} - Returns an object
    * @memberof CommunityService
    * */
-  static async updateCommunity(data, id) {
+  static async updateCommunity(data, id, user) {
     const community = await CommunityModel.findById(id);
 
     if (!community)
@@ -77,6 +85,14 @@ class CommunityService {
       { new: true }
     );
     logger.info(`Community updated with id: ${id}`);
+
+    AuditLogService.createAuditLog({
+      action: 'update',
+      resource: 'community',
+      modelId: id,
+      userId: user.id,
+    });
+
     return {
       statusCode: 200,
       message: 'Community updated successfully',
@@ -86,12 +102,12 @@ class CommunityService {
 
   /**
    * @description - This method is used to delete communities
-   * @param {object} req - The request object
-   * @param {object} res - The response object
+   * @param {object} data - The data object
+   * @param {object} user - The user object
    * @returns {object} - Returns an object
    * @memberof CommunityService
    * */
-  static async deleteCommunity(data) {
+  static async deleteCommunity(data, user) {
     const { id } = data;
     const community = await CommunityModel.findById(id);
     if (!community)
@@ -101,6 +117,13 @@ class CommunityService {
       };
     await CommunityModel.findByIdAndDelete(id);
     logger.info(`Community deleted with id: ${id}`);
+
+    AuditLogService.createAuditLog({
+      action: 'delete',
+      resource: 'community',
+      modelId: id,
+      userId: user.id,
+    });
     return {
       statusCode: 200,
       message: 'Community deleted successfully',

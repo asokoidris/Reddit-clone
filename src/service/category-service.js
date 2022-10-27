@@ -1,6 +1,6 @@
 const CategoryModel = require('../model/category');
 const HelperFunctions = require('../utils/helper-functions');
-const { successResponse, errorResponse } = require('../utils/response');
+const AuditLogService = require('./audit-log-service');
 
 /**
  * @description - This is a class that contains methods for category.
@@ -9,12 +9,12 @@ const { successResponse, errorResponse } = require('../utils/response');
 class CategoryService {
   /**
    * @description - This method is used to create a category
-   * @param {object} req - The request object
+   * @param {object} data - The request object
    * @param {object} res - The response object
    * @returns {object} - Returns an object
    * @memberof CategoryService
    *  */
-  static async createCategory(data) {
+  static async createCategory(data, user) {
     const { name } = data;
     data.name = HelperFunctions.capitalizeFirstLetter(name);
 
@@ -28,6 +28,13 @@ class CategoryService {
       };
     const newCategory = await CategoryModel.create(data);
 
+    AuditLogService.createAuditLog({
+      action: 'create',
+      resource: 'category',
+      modelId: newCategory.id,
+      userId: user.id,
+    });
+
     logger.info(`Category created with name: ${name}`);
     return {
       statusCode: 201,
@@ -38,18 +45,17 @@ class CategoryService {
 
   /**
    * @description - This method is used to get all categories
-   * @param {object} req - The request object
-   * @param {object} res - The response object
+   * @param {object} user - The request object
    * @returns {object} - Returns an object
    * @memberof CategoryService
    * */
-  static async getAllCategories() {
+  static async getAllCategories(user) {
     const categories = await CategoryModel.find();
-    if (!categories)
-      return {
-        statusCode: 404,
-        message: 'Categories not found',
-      };
+    AuditLogService.createAuditLog({
+      action: 'view',
+      resource: 'category',
+      userId: user.id,
+    });
     return {
       statusCode: 200,
       message: 'Categories retrieved successfully',
@@ -59,13 +65,12 @@ class CategoryService {
 
   /**
    * @description - This method is used to get a category by id
-   *
-   * @param {object} req - The request object
-   * @param {object} res - The response object
+   * @param {string} id - The id of the category
+   * @param {object} user - The user object
    * @returns {object} - Returns an object
    * @memberof CategoryService
    * */
-  static async getCategoryById(id) {
+  static async getCategoryById(id, user) {
     const validMongoId = HelperFunctions.isValidMongoId(id);
     if (!validMongoId)
       return {
@@ -73,12 +78,20 @@ class CategoryService {
         message: 'Category not found',
       };
 
+    AuditLogService.createAuditLog({
+      action: 'view',
+      resource: 'category',
+      modelId: id,
+      userId: user.id,
+    });
+
     const category = await CategoryModel.findById(id);
     if (!category)
       return {
         statusCode: 404,
         message: 'Category not found',
       };
+
     return {
       statusCode: 200,
       message: 'Category retrieved successfully',
@@ -88,12 +101,13 @@ class CategoryService {
 
   /**
    * @description - This method is used to update a category
-   * @param {object} req - The request object
-   * @param {object} res - The response object
+   * @param {string} id - The request object
+   * @param {object} data - The response object
+   * @param {object} user - The user object
    * @returns {object} - Returns an object
    * @memberof CategoryService
    * */
-  static async updateCategory(id, data) {
+  static async updateCategory(id, data, user) {
     const { name, value } = data;
     const validMongoId = HelperFunctions.isValidMongoId(id);
 
@@ -104,6 +118,13 @@ class CategoryService {
       };
 
     const category = await CategoryModel.findById(id);
+
+    AuditLogService.createAuditLog({
+      action: 'update',
+      resource: 'category',
+      modelId: id,
+      userId: user.id,
+    });
 
     if (!category)
       return {
@@ -136,20 +157,25 @@ class CategoryService {
   /**
    *
    * @description - This method is used to delete a category
-   *
-   *
-   * @param {object} req - The request object
-   * @param {object} res - The response object
+   * @param {string} id - The id of the category
+   * @param {object} user - The user object
    * @returns {object} - Returns an object
    * @memberof CategoryService
    * */
-  static async deleteCategory(id) {
+  static async deleteCategory(id, user) {
     const category = await CategoryModel.findByIdAndDelete(id);
     if (!category)
       return {
         statusCode: 404,
         message: 'Category not found',
       };
+
+    AuditLogService.createAuditLog({
+      action: 'delete',
+      resource: 'category',
+      modelId: id,
+      userId: user.id,
+    });
     return {
       statusCode: 200,
       message: 'Category deleted successfully',

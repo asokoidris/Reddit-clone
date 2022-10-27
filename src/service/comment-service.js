@@ -1,6 +1,7 @@
 const CommentModel = require('../model/comment');
 const PostModel = require('../model/post');
 const { validateObjectId } = require('../utils/helper-functions');
+const AuditLogService = require('./audit-log-service');
 
 /**
  * @description - This is a class that contains methods for comment.
@@ -42,6 +43,14 @@ class CommentService {
         $push: { comments: createdComment._id },
       });
 
+      // update the audit log
+      await AuditLogService.createAuditLog({
+        action: 'comment',
+        resource: 'comment',
+        modelId: data.commentId || data.postId,
+        userId: user.id,
+      });
+
       return {
         statusCode: 201,
         message: 'Comment created successfully',
@@ -72,6 +81,7 @@ class CommentService {
         statusCode: 404,
         message: 'No comment found',
       };
+
     return {
       statusCode: 200,
       message: 'Comments retrieved successfully',

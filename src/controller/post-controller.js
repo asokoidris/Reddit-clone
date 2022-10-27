@@ -115,7 +115,7 @@ class PostController {
   static async deletePost(req, res) {
     try {
       const { id } = req.params;
-      const result = await PostService.deletePost(id);
+      const result = await PostService.deletePost(id, req.user);
       if (result.statusCode == 404)
         return errorResponse(res, result.statusCode, result.message);
       logger.info(

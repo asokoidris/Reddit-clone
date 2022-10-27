@@ -15,7 +15,7 @@ class CategoryController {
    *  */
   static async createCategory(req, res) {
     try {
-      const category = await CategoryService.createCategory(req.body);
+      const category = await CategoryService.createCategory(req.body, req.user);
       if (category.statusCode === 409) {
         return errorResponse(res, category.statusCode, category.message);
       }
@@ -36,7 +36,7 @@ class CategoryController {
    * */
   static async getAllCategories(req, res) {
     try {
-      const categories = await CategoryService.getAllCategories();
+      const categories = await CategoryService.getAllCategories(req.user);
       if (categories.statusCode === 404) {
         return errorResponse(res, categories.statusCode, categories.message);
       }
@@ -59,7 +59,7 @@ class CategoryController {
   static async getCategoryById(req, res) {
     try {
       const { id } = req.params;
-      const category = await CategoryService.getCategoryById(id);
+      const category = await CategoryService.getCategoryById(id, req.user);
       if (category.statusCode === 404) {
         return errorResponse(res, category.statusCode, category.message);
       }
@@ -73,7 +73,6 @@ class CategoryController {
 
   /**
    * @description - This method is used to update a category
-   *
    * @param {object} req - The request object
    * @param {object} res - The response object
    * @returns {object} - Returns an object
@@ -82,7 +81,11 @@ class CategoryController {
   static async updateCategory(req, res) {
     try {
       const { id } = req.params;
-      const category = await CategoryService.updateCategory(id, req.body);
+      const category = await CategoryService.updateCategory(
+        id,
+        req.body,
+        req.user
+      );
       if (category.statusCode === 404) {
         return errorResponse(res, category.statusCode, category.message);
       }
@@ -96,7 +99,6 @@ class CategoryController {
 
   /**
    * @description - This method is used to delete a category
-   *
    * @param {object} req - The request object
    * @param {object} res - The response object
    * @returns {object} - Returns an object
@@ -105,7 +107,7 @@ class CategoryController {
   static async deleteCategory(req, res) {
     try {
       const { id } = req.params;
-      const category = await CategoryService.deleteCategory(id);
+      const category = await CategoryService.deleteCategory(id, req.user);
       if (category.statusCode === 404) {
         return errorResponse(res, category.statusCode, category.message);
       }
