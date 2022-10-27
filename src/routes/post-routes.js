@@ -3,13 +3,11 @@ const router = express.Router();
 const { validate } = require('../validation/validatorClass');
 const {
   createPostSchema,
-  getPostByIdSchema,
   updatePostSchema,
   deletePostSchema,
 } = require('../validation/schema/post');
 const PostControllers = require('../controller/post-controller');
 const { isUserAuthenticated } = require('../middleware/authentication');
-const { get } = require('mongoose');
 
 router.post(
   '/',
@@ -18,7 +16,9 @@ router.post(
   PostControllers.createPost
 );
 
-router.get('/:id', validate(getPostByIdSchema), PostControllers.getPostById);
+router.get('/all', isUserAuthenticated, PostControllers.getAllPosts);
+
+router.get('/:id', isUserAuthenticated, PostControllers.getPostById);
 
 router.patch(
   '/:id',

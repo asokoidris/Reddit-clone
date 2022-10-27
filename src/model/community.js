@@ -82,6 +82,7 @@ const communitySchema = new mongoose.Schema(
     ],
     privacy: {
       type: String,
+      enum: ['public', 'private'],
       default: 'public',
     },
     banned: [

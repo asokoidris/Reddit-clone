@@ -14,11 +14,12 @@ class PostService {
   /**
    * @description - This method is used to create a post
    * @param {object} data - The request object
+   * @param {object} user - The response object
    * @returns {object} - Returns an object
    * @memberof PostService
    */
   static async createPost(data, user) {
-    const { title, categories } = data;
+    const { title } = data;
     const post = await PostModel.findOne({
       title: HelperFunctions.capitalizeFirstLetter(title),
     });
@@ -79,46 +80,131 @@ class PostService {
   }
 
   /**
-   *  @description - This method is used to get a post
-   * @param {object} req - The request object
-   * @param {object} res - The response object
+   * @description - This method is used to get a post by id
+   * @param {string} id - The id of the post
+   * @param {object} user - The user object
    * @returns {object} - Returns an object
    * @memberof PostService
    * */
-  static async getPostById(id) {
-    // check if post is public or private
+  static async getPostById(id, user) {
+    const post = await PostModel.findById(id)
+      .populate('postedBy')
+      .populate('postedTo');
+
+    if (!post || (post.drafted && post.postedBy._id.toString() !== user.id))
+      return {
+        statusCode: 404,
+        message: 'Post not found',
+      };
+
+    if (
+      post.postedTo.privacy === 'private' &&
+      !post.postedTo.members.includes(user.id)
+    ) {
+      const isMember = post.postedTo.members.includes(user.id);
+      if (!isMember)
+        return {
+          statusCode: 403,
+          message: 'You are not a member of this community',
+        };
+    }
+
+    return {
+      statusCode: 200,
+      message: 'Post fetched successfully',
+      data: post,
+    };
+  }
+
+  /**
+   * @description - This method is used to get all posts
+   * @param {object} user - The user object
+   * @Params {page: number, limit: number } pagination - The pagination object
+   * @returns {object} - Returns an object
+   * @memberof PostService
+   * */
+  static async getAllPosts(user, queryData) {
+    // use mongoose.paginate to get all posts
+    // only drafted post and where the user is a member of the community
+    // and remove post where the community is private and the user is not a member
+
+    const query = {
+      page: Number(queryData.page) || 1,
+      limit: Number(queryData.limit) || 10,
+    };
+
+    const posts = await PostModel.paginate(
+      {
+        drafted: false,
+      },
+      {
+        page: query.page,
+        limit: query.limit,
+        sort: { createdAt: -1 },
+        populate: [
+          {
+            path: 'postedBy',
+          },
+          {
+            path: 'postedTo',
+          },
+        ],
+      }
+    )
+      // remove post where the community is private and the user is not a member
+      .then((posts) => {
+        console.log(posts, 'posts');
+        // remove from posts.docs array where the community is private and the user is not a member
+        posts.docs = posts.docs.filter((post) => {
+          if (
+            post.postedTo.privacy === 'private' &&
+            !post.postedTo.members.includes(user.id)
+          ) {
+            return false;
+          }
+          return true;
+        });
+
+        posts.totalDocs = posts.docs.length;
+        posts.totalPages = Math.ceil(posts.totalDocs / posts.limit);
+
+        return posts;
+      });
+
+    return {
+      statusCode: 200,
+      message: 'Posts fetched successfully',
+      data: posts,
+    };
+  }
+
+  /**
+   * @description - This method is used to update a post
+   * @param {object} data - The request object
+   * @param {object} id - The id of the post
+   * @param {object} user - The response object
+   * @returns {object} - Returns an object
+   * @memberof PostService
+   * */
+  static async updatePost(data, id, user) {
     const post = await PostModel.findById(id);
     if (!post)
       return {
         statusCode: 404,
         message: 'Post not found',
       };
-    return {
-      statusCode: 200,
-      message: 'Post found',
-      data: post,
-    };
-  }
-
-  /**
-   * @description - This method is used to update a post
-   * @param {object} req - The request object
-   *  @param {object} res - The response object
-   * @returns {object} - Returns an object
-   * @memberof PostService
-   * */
-  static async updatePost(data, id) {
-    const post = await PostModel.findById(id);
-    if (!post)
+    // check if the user is the owner of the post
+    if (post.postedBy.toString() !== user.id)
       return {
-        statusCode: 404,
-        message: 'Post not found',
+        statusCode: 403,
+        message: 'You are not the owner of this post',
       };
     const updatedPost = await PostModel.findByIdAndUpdate(
       { _id: id },
       { ...data },
       { new: true }
     );
+
     return {
       statusCode: 200,
       message: 'Post updated successfully',

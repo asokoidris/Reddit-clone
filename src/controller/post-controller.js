@@ -37,6 +37,27 @@ class PostController {
   }
 
   /**
+   * @description - This method is used to get all posts controller
+   * @param {object} req - The request object
+   * @param {object} res - The response object
+   * @returns {object} - Returns an object
+   * @memberof PostController
+   * */
+  static async getAllPosts(req, res) {
+    try {
+      const { user, query } = req;
+      const posts = await PostService.getAllPosts(user, query);
+      logger.info(`All posts fetched successfully: ${JSON.stringify(posts)}`);
+      return successResponse(res, posts.statusCode, posts.message, posts);
+    } catch (error) {
+      logger.error(
+        `Error in fetching all posts: ${JSON.stringify(error.message)}`
+      );
+      return errorResponse(res, 500, error.message);
+    }
+  }
+
+  /**
    * @description - This method is used to post by id
    * @param {object} req - The request object
    * @param {object} res - The response object
@@ -69,9 +90,9 @@ class PostController {
    * */
   static async updatePost(req, res) {
     try {
-      const { body } = req;
+      const { body, user } = req;
       const { id } = req.params;
-      const result = await PostService.updatePost(body, id);
+      const result = await PostService.updatePost(body, id, user);
       if (result.statusCode == 404)
         return errorResponse(res, result.statusCode, result.message);
       logger.info(
