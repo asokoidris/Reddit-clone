@@ -11,6 +11,7 @@ const userRouter = require('./user-routes');
 const categoryRouter = require('./category-routes');
 const communityRouter = require('./community-routes');
 const postRouter = require('./post-routes');
+const commentRouter = require('./comment-routes');
 
 global.logger = Logger.createLogger({ label: 'Reddit Clone' });
 
@@ -30,6 +31,7 @@ app.use('/user', userRouter);
 app.use('/category', categoryRouter);
 app.use('/community', communityRouter);
 app.use('/post', postRouter);
+app.use('/comment', commentRouter);
 
 app.get('/', (req, res) => {
   res.send('Reddit Clone');

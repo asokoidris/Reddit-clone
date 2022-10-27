@@ -89,7 +89,8 @@ class PostService {
   static async getPostById(id, user) {
     const post = await PostModel.findById(id)
       .populate('postedBy')
-      .populate('postedTo');
+      .populate('postedTo')
+      .populate('comments');
 
     if (!post || (post.drafted && post.postedBy._id.toString() !== user.id))
       return {
@@ -153,7 +154,6 @@ class PostService {
     )
       // remove post where the community is private and the user is not a member
       .then((posts) => {
-        console.log(posts, 'posts');
         // remove from posts.docs array where the community is private and the user is not a member
         posts.docs = posts.docs.filter((post) => {
           if (
